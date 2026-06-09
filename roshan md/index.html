@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NutriFlow — AI-Powered Personalized Nutrition & Wellness</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --green:#10b981;--green-light:#34d399;--blue:#3b82f6;--blue-light:#60a5fa;
+      --purple:#8b5cf6;--purple-light:#a78bfa;--cyan:#06b6d4;--pink:#ec4899;
+      --bg:#0a0f1a;--bg2:#111827;--glass:rgba(255,255,255,.06);
+      --glass-border:rgba(255,255,255,.12);--text:#f1f5f9;--muted:#94a3b8;
+      --radius:20px;--shadow:0 8px 32px rgba(0,0,0,.4);
+    }
+    html{scroll-behavior:smooth}
+    body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;line-height:1.6}
+    .bg-glow{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+    .bg-glow span{position:absolute;border-radius:50%;filter:blur(80px);opacity:.35;animation:float 12s ease-in-out infinite}
+    .bg-glow .g1{width:500px;height:500px;background:var(--green);top:-10%;left:-5%;animation-delay:0s}
+    .bg-glow .g2{width:400px;height:400px;background:var(--blue);top:30%;right:-8%;animation-delay:-4s}
+    .bg-glow .g3{width:450px;height:450px;background:var(--purple);bottom:-5%;left:30%;animation-delay:-8s}
+    @keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-30px) scale(1.05)}}
+    .container{max-width:1200px;margin:0 auto;padding:0 24px}
+    section{padding:100px 0;position:relative}
+    .reveal{opacity:0;transform:translateY(40px);transition:opacity .8s ease,transform .8s ease}
+    .reveal.visible{opacity:1;transform:translateY(0)}
+    .reveal-delay-1{transition-delay:.15s}.reveal-delay-2{transition-delay:.3s}.reveal-delay-3{transition-delay:.45s}
+
+    /* Nav */
+    nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 0;transition:background .3s,backdrop-filter .3s}
+    nav.scrolled{background:rgba(10,15,26,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--glass-border)}
+    .nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;padding:0 24px}
+    .logo{display:flex;align-items:center;gap:10px;font-size:1.4rem;font-weight:700;text-decoration:none;color:var(--text)}
+    .logo svg{width:36px;height:36px}
+    .nav-links{display:flex;gap:32px;list-style:none}
+    .nav-links a{color:var(--muted);text-decoration:none;font-size:.95rem;transition:color .3s}
+    .nav-links a:hover{color:var(--green-light)}
+    .nav-cta{padding:10px 24px;background:linear-gradient(135deg,var(--green),var(--cyan));border:none;border-radius:50px;color:#fff;font-weight:600;cursor:pointer;text-decoration:none;font-size:.9rem;transition:transform .3s,box-shadow .3s}
+    .nav-cta:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(16,185,129,.4)}
+    .menu-toggle{display:none;background:none;border:none;color:var(--text);font-size:1.5rem;cursor:pointer}
+
+    /* Hero */
+    .hero{min-height:100vh;display:flex;align-items:center;padding-top:80px;position:relative}
+    .hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+    .hero-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:var(--glass);border:1px solid var(--glass-border);border-radius:50px;font-size:.85rem;color:var(--green-light);margin-bottom:24px;backdrop-filter:blur(10px)}
+    .hero-badge .dot{width:8px;height:8px;background:var(--green);border-radius:50%;animation:pulse-dot 2s infinite}
+    @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
+    .hero h1{font-size:clamp(2.5rem,5vw,3.8rem);font-weight:800;line-height:1.1;margin-bottom:20px}
+    .hero h1 .gradient{background:linear-gradient(135deg,var(--green-light),var(--cyan),var(--purple-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .hero-tagline{font-size:1.15rem;color:var(--muted);margin-bottom:32px;max-width:520px}
+    .hero-actions{display:flex;gap:16px;flex-wrap:wrap}
+    .btn-primary{padding:16px 36px;background:linear-gradient(135deg,var(--green),var(--cyan));border:none;border-radius:50px;color:#fff;font-size:1.05rem;font-weight:700;cursor:pointer;transition:transform .3s,box-shadow .3s;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+    .btn-primary:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(16,185,129,.45)}
+    .btn-secondary{padding:16px 36px;background:var(--glass);border:1px solid var(--glass-border);border-radius:50px;color:var(--text);font-size:1.05rem;font-weight:600;cursor:pointer;backdrop-filter:blur(10px);transition:background .3s,border-color .3s;text-decoration:none}
+    .btn-secondary:hover{background:rgba(255,255,255,.1);border-color:var(--green)}
+
+    /* Live Dashboard Hero Viz */
+    .hero-dashboard{position:relative}
+    .dash-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);padding:28px;backdrop-filter:blur(20px);box-shadow:var(--shadow)}
+    .dash-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+    .dash-header h3{font-size:1rem;font-weight:600}
+    .live-badge{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--green-light)}
+    .live-badge .live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse-dot 1.5s infinite}
+    .health-rings{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+    .ring-item{text-align:center}
+    .ring-svg{width:80px;height:80px;margin:0 auto 8px}
+    .ring-svg circle{fill:none;stroke-width:6;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50% 50%}
+    .ring-bg{stroke:rgba(255,255,255,.08)}
+    .ring-fill{transition:stroke-dashoffset 1.5s ease}
+    .ring-label{font-size:.7rem;color:var(--muted)}
+    .ring-value{font-size:.95rem;font-weight:700}
+    .dash-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .stat-box{background:rgba(255,255,255,.04);border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;transition:transform .3s,background .3s}
+    .stat-box:hover{transform:translateY(-2px);background:rgba(255,255,255,.08)}
+    .stat-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .stat-icon.green{background:rgba(16,185,129,.15);color:var(--green-light)}
+    .stat-icon.blue{background:rgba(59,130,246,.15);color:var(--blue-light)}
+    .stat-icon.purple{background:rgba(139,92,246,.15);color:var(--purple-light)}
+    .stat-icon.cyan{background:rgba(6,182,212,.15);color:var(--cyan)}
+    .stat-info .stat-label{font-size:.7rem;color:var(--muted)}
+    .stat-info .stat-num{font-size:1.1rem;font-weight:700}
+    .wellness-bar{margin-top:20px}
+    .wellness-bar .bar-header{display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:8px}
+    .bar-track{height:8px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden}
+    .bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),var(--cyan));transition:width 1.5s ease;width:0}
+    .floating-cards{position:absolute}
+    .float-card-1{top:-20px;right:-30px;animation:floatCard 4s ease-in-out infinite}
+    .float-card-2{bottom:20px;left:-40px;animation:floatCard 5s ease-in-out infinite reverse}
+    @keyframes floatCard{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+    .mini-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:14px;padding:12px 16px;backdrop-filter:blur(16px);display:flex;align-items:center;gap:10px;font-size:.8rem;box-shadow:var(--shadow)}
+    .mini-card svg{width:24px;height:24px;flex-shrink:0}
+
+    /* Section headers */
+    .section-header{text-align:center;margin-bottom:60px}
+    .section-tag{display:inline-block;padding:6px 16px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);border-radius:50px;font-size:.8rem;color:var(--green-light);margin-bottom:16px;text-transform:uppercase;letter-spacing:1px}
+    .section-header h2{font-size:clamp(2rem,4vw,2.8rem);font-weight:800;margin-bottom:16px}
+    .section-header p{color:var(--muted);max-width:600px;margin:0 auto;font-size:1.05rem}
+
+    /* Features */
+    .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+    .feature-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);padding:36px 28px;backdrop-filter:blur(16px);transition:transform .4s,box-shadow .4s,border-color .4s;position:relative;overflow:hidden}
+    .feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--green),var(--cyan));opacity:0;transition:opacity .4s}
+    .feature-card:hover{transform:translateY(-8px);box-shadow:0 20px 48px rgba(0,0,0,.3);border-color:rgba(16,185,129,.3)}
+    .feature-card:hover::before{opacity:1}
+    .feature-icon{width:64px;height:64px;border-radius:18px;display:flex;align-items:center;justify-content:center;margin-bottom:24px}
+    .feature-icon.g{background:rgba(16,185,129,.12)}.feature-icon.b{background:rgba(59,130,246,.12)}.feature-icon.p{background:rgba(139,92,246,.12)}
+    .feature-card h3{font-size:1.25rem;margin-bottom:12px;font-weight:700}
+    .feature-card p{color:var(--muted);font-size:.95rem}
+
+    /* Dashboard Preview */
+    .dashboard-preview{background:linear-gradient(180deg,transparent,rgba(16,185,129,.03),transparent)}
+    .dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+    .dash-panel{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);padding:24px;backdrop-filter:blur(16px);transition:transform .3s}
+    .dash-panel:hover{transform:translateY(-4px)}
+    .dash-panel.wide{grid-column:span 2}
+    .dash-panel h4{font-size:.9rem;color:var(--muted);margin-bottom:16px;font-weight:500}
+    .dash-panel .big-num{font-size:2rem;font-weight:800;background:linear-gradient(135deg,var(--green-light),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .macro-bars{display:flex;flex-direction:column;gap:14px}
+    .macro-row{display:flex;align-items:center;gap:12px}
+    .macro-label{width:60px;font-size:.8rem;color:var(--muted)}
+    .macro-track{flex:1;height:10px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden}
+    .macro-fill{height:100%;border-radius:5px;transition:width 1.5s ease;width:0}
+    .macro-fill.protein{background:linear-gradient(90deg,#f472b6,#ec4899)}
+    .macro-fill.carbs{background:linear-gradient(90deg,#fbbf24,#f59e0b)}
+    .macro-fill.fats{background:linear-gradient(90deg,#60a5fa,#3b82f6)}
+    .macro-pct{width:40px;text-align:right;font-size:.8rem;font-weight:600}
+    .chart-svg{width:100%;height:120px}
+    .chart-line{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+    .activity-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+    .act-stat{text-align:center;padding:12px;background:rgba(255,255,255,.04);border-radius:12px}
+    .act-stat .num{font-size:1.3rem;font-weight:700;color:var(--cyan)}
+    .act-stat .lbl{font-size:.7rem;color:var(--muted)}
+
+    /* Nutrition Insights */
+    .insights-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+    .insight-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);padding:28px;backdrop-filter:blur(16px)}
+    .insight-card h4{font-size:1rem;margin-bottom:20px;font-weight:600}
+    .nutrient-chart{display:flex;align-items:flex-end;gap:8px;height:140px;padding-top:10px}
+    .nutrient-bar{flex:1;border-radius:8px 8px 0 0;transition:height 1.2s ease;position:relative;min-height:4px}
+    .nutrient-bar span{position:absolute;bottom:-22px;left:50%;transform:translateX(-50%);font-size:.65rem;color:var(--muted);white-space:nowrap}
+    .vitamin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .vitamin-item{text-align:center;padding:12px 8px;background:rgba(255,255,255,.04);border-radius:12px}
+    .vitamin-ring{width:48px;height:48px;margin:0 auto 6px}
+    .vitamin-item .vname{font-size:.65rem;color:var(--muted)}
+    .vitamin-item .vpct{font-size:.8rem;font-weight:700}
+    .meal-score{display:flex;align-items:center;gap:24px}
+    .score-meter{position:relative;width:120px;height:120px;flex-shrink:0}
+    .score-meter svg{width:120px;height:120px}
+    .score-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+    .score-center .score-num{font-size:2rem;font-weight:800;color:var(--green-light)}
+    .score-center .score-lbl{font-size:.7rem;color:var(--muted)}
+    .reco-list{list-style:none;display:flex;flex-direction:column;gap:10px;flex:1}
+    .reco-list li{display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(255,255,255,.04);border-radius:12px;font-size:.85rem;transition:background .3s}
+    .reco-list li:hover{background:rgba(16,185,129,.08)}
+    .reco-list li svg{width:20px;height:20px;flex-shrink:0;color:var(--green-light)}
+
+    /* Meal Cards */
+    .meal-cards{display:flex;gap:16px;margin-top:24px;overflow-x:auto;padding-bottom:8px}
+    .meal-card{min-width:180px;background:rgba(255,255,255,.04);border:1px solid var(--glass-border);border-radius:16px;padding:16px;transition:transform .3s,border-color .3s;cursor:pointer;flex-shrink:0}
+    .meal-card:hover{transform:scale(1.04);border-color:var(--green)}
+    .meal-card .meal-icon{margin-bottom:10px}
+    .meal-card .meal-name{font-size:.85rem;font-weight:600;margin-bottom:4px}
+    .meal-card .meal-cal{font-size:.75rem;color:var(--muted)}
+    .meal-card .meal-bar{height:4px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:8px;overflow:hidden}
+    .meal-card .meal-bar-fill{height:100%;border-radius:2px;background:var(--green)}
+
+    /* Timeline */
+    .timeline{margin-top:20px;position:relative;padding-left:24px}
+    .timeline::before{content:'';position:absolute;left:8px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--green),var(--purple))}
+    .timeline-item{position:relative;padding:0 0 20px 20px}
+    .timeline-item::before{content:'';position:absolute;left:-20px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--green);border:2px solid var(--bg)}
+    .timeline-item .time{font-size:.7rem;color:var(--cyan);font-weight:600}
+    .timeline-item .activity{font-size:.85rem;margin-top:2px}
+    .timeline-item .cal-burned{font-size:.75rem;color:var(--muted)}
+
+    /* Pricing */
+    .pricing-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+    .price-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);padding:32px 24px;backdrop-filter:blur(16px);transition:transform .4s,box-shadow .4s;position:relative;text-align:center}
+    .price-card:hover{transform:translateY(-6px);box-shadow:0 16px 40px rgba(0,0,0,.3)}
+    .price-card.featured{border-color:var(--green);background:rgba(16,185,129,.06)}
+    .price-card.featured::after{content:'POPULAR';position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--green),var(--cyan));padding:4px 16px;border-radius:50px;font-size:.7rem;font-weight:700;letter-spacing:1px}
+    .price-card h3{font-size:1.1rem;margin-bottom:8px}
+    .price-card .price{font-size:2.5rem;font-weight:800;margin:16px 0}
+    .price-card .price span{font-size:.9rem;color:var(--muted);font-weight:400}
+    .price-card .price-desc{font-size:.85rem;color:var(--muted);margin-bottom:24px}
+    .price-features{list-style:none;text-align:left;margin-bottom:28px}
+    .price-features li{padding:8px 0;font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,255,255,.04)}
+    .price-features li svg{width:16px;height:16px;color:var(--green-light);flex-shrink:0}
+    .price-btn{width:100%;padding:12px;border-radius:50px;border:1px solid var(--glass-border);background:transparent;color:var(--text);font-weight:600;cursor:pointer;transition:all .3s;font-size:.9rem}
+    .price-card.featured .price-btn,.price-btn:hover{background:linear-gradient(135deg,var(--green),var(--cyan));border-color:transparent;color:#fff}
+
+    /* Testimonials */
+    .testimonials-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+    .testimonial-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);padding:32px;backdrop-filter:blur(16px);transition:transform .3s}
+    .testimonial-card:hover{transform:translateY(-4px)}
+    .stars{color:#fbbf24;margin-bottom:16px;font-size:.9rem;letter-spacing:2px}
+    .testimonial-card blockquote{font-size:.95rem;color:var(--muted);margin-bottom:24px;font-style:italic;line-height:1.7}
+    .testimonial-author{display:flex;align-items:center;gap:14px}
+    .author-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0}
+    .author-info .name{font-weight:600;font-size:.9rem}
+    .author-info .role{font-size:.8rem;color:var(--muted)}
+
+    /* Wellness Programs */
+    .programs-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+    .program-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--radius);overflow:hidden;transition:transform .4s,box-shadow .4s;cursor:pointer}
+    .program-card:hover{transform:translateY(-6px);box-shadow:0 16px 40px rgba(0,0,0,.3)}
+    .program-visual{height:140px;display:flex;align-items:center;justify-content:center;position:relative}
+    .program-visual.wl{background:linear-gradient(135deg,rgba(16,185,129,.2),rgba(6,182,212,.2))}
+    .program-visual.mg{background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(139,92,246,.2))}
+    .program-visual.hl{background:linear-gradient(135deg,rgba(251,191,36,.15),rgba(16,185,129,.2))}
+    .program-visual.mn{background:linear-gradient(135deg,rgba(236,72,153,.15),rgba(139,92,246,.2))}
+    .program-body{padding:24px}
+    .program-body h3{font-size:1.05rem;margin-bottom:8px}
+    .program-body p{font-size:.85rem;color:var(--muted);margin-bottom:16px}
+    .program-tags{display:flex;gap:6px;flex-wrap:wrap}
+    .program-tags span{font-size:.7rem;padding:4px 10px;background:rgba(255,255,255,.06);border-radius:50px;color:var(--muted)}
+
+    /* Footer */
+    footer{background:rgba(0,0,0,.3);border-top:1px solid var(--glass-border);padding:80px 0 32px}
+    .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1.5fr;gap:40px;margin-bottom:60px}
+    .footer-brand .logo{margin-bottom:16px}
+    .footer-brand p{color:var(--muted);font-size:.9rem;margin-bottom:20px;max-width:300px}
+    .social-links{display:flex;gap:12px}
+    .social-links a{width:40px;height:40px;border-radius:12px;background:var(--glass);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .3s;text-decoration:none}
+    .social-links a:hover{background:var(--green);color:#fff;border-color:var(--green)}
+    .footer-col h4{font-size:.9rem;margin-bottom:20px;font-weight:600}
+    .footer-col ul{list-style:none}
+    .footer-col ul li{margin-bottom:10px}
+    .footer-col ul a{color:var(--muted);text-decoration:none;font-size:.85rem;transition:color .3s}
+    .footer-col ul a:hover{color:var(--green-light)}
+    .newsletter-form{display:flex;gap:8px}
+    .newsletter-form input{flex:1;padding:12px 16px;background:rgba(255,255,255,.06);border:1px solid var(--glass-border);border-radius:12px;color:var(--text);font-size:.85rem;outline:none}
+    .newsletter-form input:focus{border-color:var(--green)}
+    .newsletter-form button{padding:12px 20px;background:linear-gradient(135deg,var(--green),var(--cyan));border:none;border-radius:12px;color:#fff;font-weight:600;cursor:pointer;transition:transform .3s}
+    .newsletter-form button:hover{transform:scale(1.05)}
+    .footer-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:32px;border-top:1px solid var(--glass-border);font-size:.8rem;color:var(--muted)}
+
+    /* Floating CTA */
+    .floating-cta{position:fixed;bottom:28px;right:28px;z-index:200;padding:16px 28px;background:linear-gradient(135deg,var(--purple),var(--pink));border:none;border-radius:50px;color:#fff;font-weight:700;font-size:.95rem;cursor:pointer;box-shadow:0 8px 32px rgba(139,92,246,.5);animation:bouncePulse 2s ease-in-out infinite;transition:transform .3s;text-decoration:none;display:flex;align-items:center;gap:8px}
+    .floating-cta:hover{transform:scale(1.08)}
+    @keyframes bouncePulse{0%,100%{transform:translateY(0);box-shadow:0 8px 32px rgba(139,92,246,.5)}50%{transform:translateY(-8px);box-shadow:0 16px 48px rgba(139,92,246,.7)}}
+
+    /* Responsive */
+    @media(max-width:1024px){
+      .hero-grid{grid-template-columns:1fr;text-align:center}
+      .hero-tagline{margin:0 auto 32px}
+      .hero-actions{justify-content:center}
+      .features-grid,.pricing-grid,.programs-grid{grid-template-columns:repeat(2,1fr)}
+      .dash-grid{grid-template-columns:repeat(2,1fr)}
+      .dash-panel.wide{grid-column:span 1}
+      .footer-grid{grid-template-columns:repeat(2,1fr)}
+    }
+    @media(max-width:768px){
+      .nav-links{display:none}
+      .menu-toggle{display:block}
+      .nav-links.open{display:flex;flex-direction:column;position:absolute;top:100%;left:0;right:0;background:rgba(10,15,26,.95);backdrop-filter:blur(20px);padding:24px;gap:16px;border-bottom:1px solid var(--glass-border)}
+      .features-grid,.testimonials-grid,.insights-grid,.pricing-grid,.programs-grid,.dash-grid{grid-template-columns:1fr}
+      .health-rings{grid-template-columns:repeat(3,1fr)}
+      .floating-cards{display:none}
+      .footer-grid{grid-template-columns:1fr}
+      .footer-bottom{flex-direction:column;gap:12px;text-align:center}
+      section{padding:70px 0}
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-glow"><span class="g1"></span><span class="g2"></span><span class="g3"></span></div>
+
+<!-- NAV -->
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      <svg viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="16" stroke="url(#lg)" stroke-width="2"/><path d="M12 20c2-4 4-6 6-6s4 2 6 6" stroke="#34d399" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="14" r="2" fill="#34d399"/><defs><linearGradient id="lg" x1="0" y1="0" x2="36" y2="36"><stop stop-color="#10b981"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs></svg>
+      NutriFlow
+    </a>
+    <button class="menu-toggle" id="menuToggle" aria-label="Menu">☰</button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#dashboard">Dashboard</a></li>
+      <li><a href="#insights">Insights</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#programs">Programs</a></li>
+    </ul>
+    <a href="#pricing" class="nav-cta">Get Started</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-content reveal">
+        <div class="hero-badge"><span class="dot"></span> AI-Powered Wellness Platform</div>
+        <h1>Fuel Your Body with <span class="gradient">Intelligent Nutrition</span></h1>
+        <p class="hero-tagline">NutriFlow uses advanced AI to personalize your diet, track your health metrics in real-time, and guide you toward your fitness goals with science-backed recommendations.</p>
+        <div class="hero-actions">
+          <a href="#pricing" class="btn-primary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Start Your Health Journey
+          </a>
+          <a href="#dashboard" class="btn-secondary">View Live Demo</a>
+        </div>
+      </div>
+      <div class="hero-dashboard reveal reveal-delay-2">
+        <div class="dash-card">
+          <div class="dash-header">
+            <h3>Today's Health Overview</h3>
+            <div class="live-badge"><span class="live-dot"></span> LIVE</div>
+          </div>
+          <div class="health-rings">
+            <div class="ring-item">
+              <svg class="ring-svg" viewBox="0 0 80 80"><circle class="ring-bg" cx="40" cy="40" r="34"/><circle class="ring-fill" cx="40" cy="40" r="34" stroke="#10b981" stroke-dasharray="213.6" stroke-dashoffset="64" data-target="70"/></svg>
+              <div class="ring-value" data-count="1847" data-suffix="">0</div>
+              <div class="ring-label">Calories</div>
+            </div>
+            <div class="ring-item">
+              <svg class="ring-svg" viewBox="0 0 80 80"><circle class="ring-bg" cx="40" cy="40" r="34"/><circle class="ring-fill" cx="40" cy="40" r="34" stroke="#06b6d4" stroke-dasharray="213.6" stroke-dashoffset="85" data-target="60"/></svg>
+              <div class="ring-value"><span data-count="72" data-suffix="%">0</span></div>
+              <div class="ring-label">Hydration</div>
+            </div>
+            <div class="ring-item">
+              <svg class="ring-svg" viewBox="0 0 80 80"><circle class="ring-bg" cx="40" cy="40" r="34"/><circle class="ring-fill" cx="40" cy="40" r="34" stroke="#8b5cf6" stroke-dasharray="213.6" stroke-dashoffset="43" data-target="80"/></svg>
+              <div class="ring-value" data-count="87" data-suffix="">0</div>
+              <div class="ring-label">Wellness</div>
+            </div>
+          </div>
+          <div class="dash-stats">
+            <div class="stat-box">
+              <div class="stat-icon green"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+              <div class="stat-info"><div class="stat-label">Heart Rate</div><div class="stat-num"><span data-live="hr">72</span> bpm</div></div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-icon blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 4v16M17 4v16M21 4v16M9 8v12M5 12v8"/></svg></div>
+              <div class="stat-info"><div class="stat-label">Steps</div><div class="stat-num"><span data-live="steps">0</span></div></div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-icon purple"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+              <div class="stat-info"><div class="stat-label">Active Min</div><div class="stat-num"><span data-count="47" data-suffix="">0</span></div></div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-icon cyan"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 11-11.32 0z"/></svg></div>
+              <div class="stat-info"><div class="stat-label">Water</div><div class="stat-num"><span data-live="water">0</span>L</div></div>
+            </div>
+          </div>
+          <div class="wellness-bar">
+            <div class="bar-header"><span>Daily Nutrient Goals</span><span data-count="78" data-suffix="%">0%</span></div>
+            <div class="bar-track"><div class="bar-fill" data-width="78"></div></div>
+          </div>
+        </div>
+        <div class="floating-cards">
+          <div class="float-card-1 mini-card">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            <div><div style="font-weight:600">AI Meal Plan</div><div style="color:var(--muted);font-size:.7rem">3 meals ready</div></div>
+          </div>
+          <div class="float-card-2 mini-card">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <div><div style="font-weight:600">Goal Hit!</div><div style="color:var(--muted);font-size:.7rem">Protein target met</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">Features</span>
+      <h2>Smarter Nutrition, Better Results</h2>
+      <p>Harness the power of AI to transform how you eat, move, and feel every single day.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon g">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 8v8"/><circle cx="17" cy="7" r="2" fill="#34d399" stroke="none"/></svg>
+        </div>
+        <h3>AI Meal Planning</h3>
+        <p>Get personalized weekly meal plans tailored to your goals, dietary restrictions, and taste preferences — powered by machine learning.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon b">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.5"><path d="M9 19v-6a2 2 0 012-2h2a2 2 0 012 2v6"/><path d="M5 9V5a2 2 0 012-2h10a2 2 0 012 2v4"/><circle cx="12" cy="14" r="3"/></svg>
+        </div>
+        <h3>Smart Nutrition Tracking</h3>
+        <p>Log meals instantly with photo recognition, barcode scanning, and voice input. Track macros, micros, and hydration effortlessly.</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon p">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.5"><path d="M12 2a7 7 0 017 7c0 5-7 13-7 13S5 14 5 9a7 7 0 017-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+        </div>
+        <h3>Personalized Health Insights</h3>
+        <p>Receive actionable recommendations based on your biometric data, activity patterns, and nutritional gaps — updated in real-time.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DASHBOARD PREVIEW -->
+<section class="dashboard-preview" id="dashboard">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">Dashboard</span>
+      <h2>Your Health Command Center</h2>
+      <p>Comprehensive analytics at your fingertips — monitor every aspect of your wellness journey.</p>
+    </div>
+    <div class="dash-grid">
+      <div class="dash-panel reveal">
+        <h4>Calorie Consumption</h4>
+        <div class="big-num"><span data-count="1847" data-suffix="">0</span> <span style="font-size:.9rem;color:var(--muted)">/ 2200 kcal</span></div>
+        <svg class="chart-svg" viewBox="0 0 300 100" preserveAspectRatio="none">
+          <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981" stop-opacity=".3"/><stop offset="100%" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs>
+          <path d="M0,80 Q30,70 60,60 T120,45 T180,55 T240,30 T300,20 L300,100 L0,100Z" fill="url(#cg)"/>
+          <path class="chart-line" stroke="#10b981" d="M0,80 Q30,70 60,60 T120,45 T180,55 T240,30 T300,20"/>
+        </svg>
+      </div>
+      <div class="dash-panel reveal reveal-delay-1">
+        <h4>Macronutrient Breakdown</h4>
+        <div class="macro-bars">
+          <div class="macro-row"><span class="macro-label">Protein</span><div class="macro-track"><div class="macro-fill protein" data-width="82"></div></div><span class="macro-pct">82g</span></div>
+          <div class="macro-row"><span class="macro-label">Carbs</span><div class="macro-track"><div class="macro-fill carbs" data-width="65"></div></div><span class="macro-pct">195g</span></div>
+          <div class="macro-row"><span class="macro-label">Fats</span><div class="macro-track"><div class="macro-fill fats" data-width="48"></div></div><span class="macro-pct">58g</span></div>
+        </div>
+      </div>
+      <div class="dash-panel reveal reveal-delay-2">
+        <h4>Hydration Tracking</h4>
+        <svg width="100%" height="100" viewBox="0 0 200 100">
+          <path d="M100 10 C80 40 60 50 60 70 A40 40 0 00200 70 C200 50 120 40 100 10Z" fill="rgba(6,182,212,.1)" stroke="#06b6d4" stroke-width="2"/>
+          <clipPath id="waterClip"><rect x="60" y="70" width="140" height="0" id="waterLevel"/></clipPath>
+          <path d="M100 10 C80 40 60 50 60 70 A40 40 0 00200 70 C200 50 120 40 100 10Z" fill="rgba(6,182,212,.4)" clip-path="url(#waterClip)"/>
+          <text x="130" y="55" text-anchor="middle" fill="#06b6d4" font-size="18" font-weight="700" id="hydroText">72%</text>
+        </svg>
+      </div>
+      <div class="dash-panel wide reveal">
+        <h4>Weight Progress</h4>
+        <svg class="chart-svg" viewBox="0 0 400 120" style="height:140px">
+          <line x1="0" y1="30" x2="400" y2="30" stroke="rgba(255,255,255,.05)" stroke-dasharray="4"/>
+          <line x1="0" y1="60" x2="400" y2="60" stroke="rgba(255,255,255,.05)" stroke-dasharray="4"/>
+          <line x1="0" y1="90" x2="400" y2="90" stroke="rgba(255,255,255,.05)" stroke-dasharray="4"/>
+          <path class="chart-line" stroke="#8b5cf6" d="M0,90 C50,85 100,75 150,70 S250,55 300,45 S380,35 400,30"/>
+          <circle cx="400" cy="30" r="5" fill="#8b5cf6"/>
+          <text x="400" y="22" text-anchor="end" fill="#a78bfa" font-size="11">168 lbs</text>
+        </svg>
+      </div>
+      <div class="dash-panel reveal reveal-delay-1">
+        <h4>Fitness Activity</h4>
+        <div class="activity-stats">
+          <div class="act-stat"><div class="num" data-count="8432" data-suffix="">0</div><div class="lbl">Steps</div></div>
+          <div class="act-stat"><div class="num" data-count="47" data-suffix="">0</div><div class="lbl">Active Min</div></div>
+          <div class="act-stat"><div class="num" data-count="312" data-suffix="">0</div><div class="lbl">Cal Burned</div></div>
+        </div>
+        <div class="timeline">
+          <div class="timeline-item"><div class="time">7:00 AM</div><div class="activity">Morning Run — 3.2 mi</div><div class="cal-burned">−248 cal</div></div>
+          <div class="timeline-item"><div class="time">12:30 PM</div><div class="activity">Strength Training — 45 min</div><div class="cal-burned">−186 cal</div></div>
+          <div class="timeline-item"><div class="time">6:00 PM</div><div class="activity">Evening Yoga — 30 min</div><div class="cal-burned">−98 cal</div></div>
+        </div>
+      </div>
+      <div class="dash-panel reveal reveal-delay-2">
+        <h4>Wellness Trends</h4>
+        <svg class="chart-svg" viewBox="0 0 300 100" style="height:140px">
+          <rect x="10" y="60" width="30" height="40" rx="4" fill="rgba(16,185,129,.3)"/>
+          <rect x="55" y="45" width="30" height="55" rx="4" fill="rgba(16,185,129,.4)"/>
+          <rect x="100" y="35" width="30" height="65" rx="4" fill="rgba(16,185,129,.5)"/>
+          <rect x="145" y="50" width="30" height="50" rx="4" fill="rgba(16,185,129,.4)"/>
+          <rect x="190" y="25" width="30" height="75" rx="4" fill="rgba(16,185,129,.6)"/>
+          <rect x="235" y="20" width="30" height="80" rx="4" fill="rgba(16,185,129,.7)"/>
+          <rect x="280" y="15" width="15" height="85" rx="4" fill="#10b981"/>
+        </svg>
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;color:var(--muted);margin-top:8px">
+          <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- NUTRITION INSIGHTS -->
+<section id="insights">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">Nutrition Insights</span>
+      <h2>Deep Dive Into Your Nutrition</h2>
+      <p>Advanced analytics reveal what your body needs — before you even feel it.</p>
+    </div>
+    <div class="insights-grid">
+      <div class="insight-card reveal">
+        <h4>Daily Nutrient Intake</h4>
+        <div class="nutrient-chart" id="nutrientChart">
+          <div class="nutrient-bar" style="background:linear-gradient(180deg,#34d399,#10b981);height:0" data-h="85"><span>Protein</span></div>
+          <div class="nutrient-bar" style="background:linear-gradient(180deg,#fbbf24,#f59e0b);height:0" data-h="70"><span>Carbs</span></div>
+          <div class="nutrient-bar" style="background:linear-gradient(180deg,#60a5fa,#3b82f6);height:0" data-h="55"><span>Fats</span></div>
+          <div class="nutrient-bar" style="background:linear-gradient(180deg,#a78bfa,#8b5cf6);height:0" data-h="90"><span>Fiber</span></div>
+          <div class="nutrient-bar" style="background:linear-gradient(180deg,#f472b6,#ec4899);height:0" data-h="60"><span>Iron</span></div>
+          <div class="nutrient-bar" style="background:linear-gradient(180deg,#22d3ee,#06b6d4);height:0" data-h="75"><span>Calcium</span></div>
+        </div>
+      </div>
+      <div class="insight-card reveal reveal-delay-1">
+        <h4>Vitamins & Minerals</h4>
+        <div class="vitamin-grid">
+          <div class="vitamin-item"><svg class="vitamin-ring" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="4"/><circle cx="24" cy="24" r="20" fill="none" stroke="#34d399" stroke-width="4" stroke-dasharray="125.6" stroke-dashoffset="25" stroke-linecap="round" transform="rotate(-90 24 24)"/></svg><div class="vpct">80%</div><div class="vname">Vit A</div></div>
+          <div class="vitamin-item"><svg class="vitamin-ring" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="4"/><circle cx="24" cy="24" r="20" fill="none" stroke="#60a5fa" stroke-width="4" stroke-dasharray="125.6" stroke-dashoffset="38" stroke-linecap="round" transform="rotate(-90 24 24)"/></svg><div class="vpct">70%</div><div class="vname">Vit C</div></div>
+          <div class="vitamin-item"><svg class="vitamin-ring" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="4"/><circle cx="24" cy="24" r="20" fill="none" stroke="#fbbf24" stroke-width="4" stroke-dasharray="125.6" stroke-dashoffset="50" stroke-linecap="round" transform="rotate(-90 24 24)"/></svg><div class="vpct">60%</div><div class="vname">Vit D</div></div>
+          <div class="vitamin-item"><svg class="vitamin-ring" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="4"/><circle cx="24" cy="24" r="20" fill="none" stroke="#a78bfa" stroke-width="4" stroke-dasharray="125.6" stroke-dashoffset="19" stroke-linecap="round" transform="rotate(-90 24 24)"/></svg><div class="vpct">85%</div><div class="vname">Vit B12</div></div>
+        </div>
+      </div>
+      <div class="insight-card reveal">
+        <h4>Meal Quality Score</h4>
+        <div class="meal-score">
+          <div class="score-meter">
+            <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="8"/><circle cx="60" cy="60" r="52" fill="none" stroke="url(#sg)" stroke-width="8" stroke-dasharray="326.7" stroke-dashoffset="49" stroke-linecap="round" transform="rotate(-90 60 60)"/><defs><linearGradient id="sg" x1="0" y1="0" x2="120" y2="120"><stop stop-color="#10b981"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs></svg>
+            <div class="score-center"><div class="score-num" data-count="85" data-suffix="">0</div><div class="score-lbl">Score</div></div>
+          </div>
+          <ul class="reco-list">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Excellent protein balance</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Good fiber intake today</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Increase Vitamin D intake</li>
+          </ul>
+        </div>
+        <div class="meal-cards">
+          <div class="meal-card"><div class="meal-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div><div class="meal-name">Breakfast Bowl</div><div class="meal-cal">420 cal · Score 92</div><div class="meal-bar"><div class="meal-bar-fill" style="width:92%"></div></div></div>
+          <div class="meal-card"><div class="meal-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.5"><path d="M18 8h1a4 4 0 010 8h-1"/><path d="M2 8h16v9a4 4 0 01-4 4H6a4 4 0 01-4-4V8z"/></svg></div><div class="meal-name">Power Lunch</div><div class="meal-cal">580 cal · Score 88</div><div class="meal-bar"><div class="meal-bar-fill" style="width:88%"></div></div></div>
+          <div class="meal-card"><div class="meal-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.5"><path d="M12 3v1m0 16v1M4.22 4.22l.7.7m13.16 13.16l.7.7M1 12h1m20 0h1M4.22 19.78l.7-.7m13.16-13.16l.7-.7"/></svg></div><div class="meal-name">Light Dinner</div><div class="meal-cal">390 cal · Score 78</div><div class="meal-bar"><div class="meal-bar-fill" style="width:78%"></div></div></div>
+        </div>
+      </div>
+      <div class="insight-card reveal reveal-delay-1">
+        <h4>Personalized Recommendations</h4>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="padding:16px;background:rgba(16,185,129,.08);border-radius:14px;border-left:3px solid var(--green)">
+            <div style="font-weight:600;font-size:.9rem;margin-bottom:4px">💧 Hydration Boost</div>
+            <div style="font-size:.85rem;color:var(--muted)">Drink 2 more glasses of water to reach your daily goal. Try adding lemon for extra Vitamin C.</div>
+          </div>
+          <div style="padding:16px;background:rgba(59,130,246,.08);border-radius:14px;border-left:3px solid var(--blue)">
+            <div style="font-weight:600;font-size:.9rem;margin-bottom:4px">🥗 Meal Suggestion</div>
+            <div style="font-size:.85rem;color:var(--muted)">Your iron levels are low. Try our Spinach & Quinoa Bowl — 28mg iron, ready in 15 min.</div>
+          </div>
+          <div style="padding:16px;background:rgba(139,92,246,.08);border-radius:14px;border-left:3px solid var(--purple)">
+            <div style="font-weight:600;font-size:.9rem;margin-bottom:4px">🏃 Activity Tip</div>
+            <div style="font-size:.85rem;color:var(--muted)">You're 1,568 steps from your goal. A 15-min evening walk will get you there!</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">Pricing</span>
+      <h2>Plans for Every Wellness Journey</h2>
+      <p>Start free and upgrade as your health goals evolve. No hidden fees, cancel anytime.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="price-card reveal">
+        <h3>Free</h3>
+        <div class="price">$0<span>/mo</span></div>
+        <p class="price-desc">Perfect for getting started</p>
+        <ul class="price-features">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Basic calorie tracking</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Water intake logging</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> 3 meal logs per day</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Weekly health summary</li>
+        </ul>
+        <button class="price-btn">Get Started</button>
+      </div>
+      <div class="price-card reveal reveal-delay-1">
+        <h3>Basic</h3>
+        <div class="price">$9<span>/mo</span></div>
+        <p class="price-desc">For dedicated trackers</p>
+        <ul class="price-features">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Unlimited meal logging</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Macro & micro tracking</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> AI meal suggestions</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Progress charts</li>
+        </ul>
+        <button class="price-btn">Choose Basic</button>
+      </div>
+      <div class="price-card featured reveal reveal-delay-2">
+        <h3>Pro</h3>
+        <div class="price">$19<span>/mo</span></div>
+        <p class="price-desc">Full AI-powered experience</p>
+        <ul class="price-features">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Everything in Basic</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> AI meal planning</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Wearable integration</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Personalized coaching</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Advanced analytics</li>
+        </ul>
+        <button class="price-btn">Go Pro</button>
+      </div>
+      <div class="price-card reveal reveal-delay-3">
+        <h3>Enterprise</h3>
+        <div class="price">$49<span>/mo</span></div>
+        <p class="price-desc">For clinics & organizations</p>
+        <ul class="price-features">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Multi-patient dashboard</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> HIPAA compliance</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Custom meal protocols</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> API access</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Priority support</li>
+        </ul>
+        <button class="price-btn">Contact Sales</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="testimonials">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">Testimonials</span>
+      <h2>Loved by Health Enthusiasts</h2>
+      <p>See how NutriFlow is transforming lives across fitness, nutrition, and healthcare.</p>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card reveal">
+        <div class="stars">★★★★★</div>
+        <blockquote>"NutriFlow completely changed my meal prep game. The AI plans are spot-on for my macros, and I've gained 12 lbs of lean muscle in 4 months!"</blockquote>
+        <div class="testimonial-author">
+          <div class="author-avatar" style="background:linear-gradient(135deg,#10b981,#06b6d4)">JM</div>
+          <div class="author-info"><div class="name">Jake Morrison</div><div class="role">Fitness Enthusiast & CrossFit Athlete</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card reveal reveal-delay-1">
+        <div class="stars">★★★★★</div>
+        <blockquote>"As someone with celiac disease, finding balanced meals was always a struggle. NutriFlow's personalized recommendations made it effortless. I've never felt better."</blockquote>
+        <div class="testimonial-author">
+          <div class="author-avatar" style="background:linear-gradient(135deg,#8b5cf6,#ec4899)">SR</div>
+          <div class="author-info"><div class="name">Sarah Rodriguez</div><div class="role">Nutrition-Conscious Professional</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card reveal reveal-delay-2">
+        <div class="stars">★★★★★</div>
+        <blockquote>"I recommend NutriFlow to my patients daily. The clinical-grade analytics and medical nutrition support features are unmatched in the consumer wellness space."</blockquote>
+        <div class="testimonial-author">
+          <div class="author-avatar" style="background:linear-gradient(135deg,#3b82f6,#60a5fa)">DK</div>
+          <div class="author-info"><div class="name">Dr. Karen Liu</div><div class="role">Registered Dietitian & Healthcare Professional</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WELLNESS PROGRAMS -->
+<section id="programs">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="section-tag">Programs</span>
+      <h2>Personalized Wellness Programs</h2>
+      <p>Science-backed plans designed for your unique body, goals, and lifestyle.</p>
+    </div>
+    <div class="programs-grid">
+      <div class="program-card reveal">
+        <div class="program-visual wl">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none"><circle cx="40" cy="40" r="30" stroke="#34d399" stroke-width="2" opacity=".3"/><path d="M40 20v25l15 10" stroke="#34d399" stroke-width="3" stroke-linecap="round"/><path d="M25 55 Q40 30 55 55" stroke="#10b981" stroke-width="2" fill="none"/></svg>
+        </div>
+        <div class="program-body"><h3>Weight Loss</h3><p>Calorie-deficit plans with nutrient-dense meals designed for sustainable fat loss.</p><div class="program-tags"><span>Calorie Control</span><span>Portion Guide</span><span>Weekly Check-ins</span></div></div>
+      </div>
+      <div class="program-card reveal reveal-delay-1">
+        <div class="program-visual mg">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none"><rect x="28" y="15" width="24" height="8" rx="4" fill="#60a5fa" opacity=".5"/><rect x="22" y="30" width="36" height="10" rx="5" fill="#3b82f6" opacity=".6"/><rect x="18" y="48" width="44" height="12" rx="6" fill="#8b5cf6" opacity=".7"/></svg>
+        </div>
+        <div class="program-body"><h3>Muscle Gain</h3><p>High-protein meal plans optimized for hypertrophy with progressive overload tracking.</p><div class="program-tags"><span>High Protein</span><span>Macro Cycling</span><span>Recovery Focus</span></div></div>
+      </div>
+      <div class="program-card reveal reveal-delay-2">
+        <div class="program-visual hl">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none"><circle cx="40" cy="40" r="25" stroke="#fbbf24" stroke-width="2"/><path d="M40 25c-5 10-15 15-15 25a15 15 0 0030 0c0-10-10-15-15-25z" fill="rgba(251,191,36,.3)" stroke="#fbbf24" stroke-width="1.5"/></svg>
+        </div>
+        <div class="program-body"><h3>Healthy Lifestyle</h3><p>Balanced nutrition for long-term wellness, energy optimization, and mindful eating habits.</p><div class="program-tags"><span>Balanced Diet</span><span>Mindful Eating</span><span>Energy Boost</span></div></div>
+      </div>
+      <div class="program-card reveal reveal-delay-3">
+        <div class="program-visual mn">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none"><path d="M40 15l5 15h15l-12 9 5 15-13-10-13 10 5-15-12-9h15z" fill="rgba(236,72,153,.2)" stroke="#ec4899" stroke-width="1.5"/><circle cx="40" cy="40" r="32" stroke="#a78bfa" stroke-width="1" stroke-dasharray="4 4" opacity=".4"/></svg>
+        </div>
+        <div class="program-body"><h3>Medical Nutrition</h3><p>Clinician-designed protocols for diabetes, heart health, and chronic condition management.</p><div class="program-tags"><span>Clinical Grade</span><span>RD Approved</span><span>HIPAA Secure</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#" class="logo">
+          <svg viewBox="0 0 36 36" fill="none" width="36" height="36"><circle cx="18" cy="18" r="16" stroke="url(#lg2)" stroke-width="2"/><path d="M12 20c2-4 4-6 6-6s4 2 6 6" stroke="#34d399" stroke-width="2" stroke-linecap="round"/><circle cx="14" cy="14" r="2" fill="#34d399"/><defs><linearGradient id="lg2" x1="0" y1="0" x2="36" y2="36"><stop stop-color="#10b981"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs></svg>
+          NutriFlow
+        </a>
+        <p>AI-powered personalized nutrition and wellness platform helping millions achieve their health goals through intelligent, science-backed recommendations.</p>
+        <div class="social-links">
+          <a href="#" aria-label="Twitter"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
+          <a href="#" aria-label="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg></a>
+          <a href="#" aria-label="LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 114.127 0 2.063 2.063 0 01-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+          <a href="#" aria-label="YouTube"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#dashboard">Dashboard</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#programs">Programs</a></li>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Blog</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="mailto:hello@nutriflow.io">hello@nutriflow.io</a></li>
+          <li><a href="tel:+18005551234">1-800-555-1234</a></li>
+          <li><a href="#">San Francisco, CA</a></li>
+          <li><a href="#">Support Center</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Newsletter</h4>
+        <p style="color:var(--muted);font-size:.85rem;margin-bottom:16px">Get weekly nutrition tips and wellness insights delivered to your inbox.</p>
+        <form class="newsletter-form" onsubmit="event.preventDefault();alert('Thanks for subscribing!')">
+          <input type="email" placeholder="Your email" required>
+          <button type="submit">Join</button>
+        </form>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 NutriFlow Inc. All rights reserved.</span>
+      <span>Made with 💚 for a healthier world</span>
+    </div>
+  </div>
+</footer>
+
+<!-- Floating CTA -->
+<a href="#pricing" class="floating-cta" id="floatingCta">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/></svg>
+  Get My Nutrition Plan
+</a>
+
+<script>
+(function(){
+  // Nav scroll
+  const nav=document.getElementById('navbar');
+  window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',window.scrollY>50));
+
+  // Mobile menu
+  document.getElementById('menuToggle').addEventListener('click',()=>{
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+
+  // Reveal on scroll
+  const reveals=document.querySelectorAll('.reveal');
+  const revealObs=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');revealObs.unobserve(e.target)}});
+  },{threshold:.15,rootMargin:'0px 0px -40px 0px'});
+  reveals.forEach(el=>revealObs.observe(el));
+
+  // Animated counters
+  function animateCounter(el,target,suffix,duration=2000){
+    const start=performance.now();
+    const isFloat=String(target).includes('.');
+    function tick(now){
+      const p=Math.min((now-start)/duration,1);
+      const ease=1-Math.pow(1-p,3);
+      const val=isFloat?(target*ease).toFixed(1):(Math.floor(target*ease)).toLocaleString();
+      el.textContent=val+(suffix||'');
+      if(p<1)requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  let countersDone=false;
+  const counterObs=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting&&!countersDone){
+        countersDone=true;
+        document.querySelectorAll('[data-count]').forEach(el=>{
+          animateCounter(el,parseFloat(el.dataset.count),el.dataset.suffix);
+        });
+        document.querySelectorAll('[data-width]').forEach(el=>{
+          setTimeout(()=>{el.style.width=el.dataset.width+'%'},300);
+        });
+        document.querySelectorAll('.nutrient-bar').forEach((bar,i)=>{
+          setTimeout(()=>{bar.style.height=bar.dataset.h+'%'},i*100);
+        });
+        // Water level animation
+        const wl=document.getElementById('waterLevel');
+        if(wl){setTimeout(()=>{wl.setAttribute('y','30');wl.setAttribute('height','40')},500)}
+        counterObs.disconnect();
+      }
+    });
+  },{threshold:.2});
+  const heroEl=document.querySelector('.hero-dashboard');
+  if(heroEl)counterObs.observe(heroEl);
+  document.querySelectorAll('.dash-panel,.insight-card').forEach(el=>counterObs.observe(el));
+
+  // Live updating health indicators
+  const hrEl=document.querySelector('[data-live="hr"]');
+  const stepsEl=document.querySelector('[data-live="steps"]');
+  const waterEl=document.querySelector('[data-live="water"]');
+  const hydroText=document.getElementById('hydroText');
+
+  let steps=6842,water=1.8,hr=72;
+  if(stepsEl)animateCounter(stepsEl,steps,'');
+
+  setInterval(()=>{
+    if(hrEl){
+      hr=72+Math.floor(Math.random()*8-4);
+      hrEl.textContent=hr;
+    }
+    if(stepsEl&&steps<8432){
+      steps+=Math.floor(Math.random()*30+5);
+      if(steps>8432)steps=8432;
+      stepsEl.textContent=steps.toLocaleString();
+    }
+    if(waterEl){
+      water=Math.min(2.5,water+0.01);
+      waterEl.textContent=water.toFixed(1);
+      if(hydroText)hydroText.textContent=Math.round(water/2.5*100)+'%';
+    }
+  },2000);
+
+  // Ring animations on load
+  document.querySelectorAll('.ring-fill').forEach(ring=>{
+    const target=parseInt(ring.dataset.target)||70;
+    const circ=2*Math.PI*34;
+    ring.style.strokeDasharray=circ;
+    ring.style.strokeDashoffset=circ;
+    setTimeout(()=>{ring.style.strokeDashoffset=circ-(circ*target/100)},800);
+  });
+
+  // Smooth anchor scroll offset for fixed nav
+  document.querySelectorAll('a[href^="#"]').forEach(a=>{
+    a.addEventListener('click',function(e){
+      const id=this.getAttribute('href');
+      if(id==='#')return;
+      e.preventDefault();
+      const t=document.querySelector(id);
+      if(t)window.scrollTo({top:t.offsetTop-70,behavior:'smooth'});
+      document.getElementById('navLinks').classList.remove('open');
+    });
+  });
+})();
+</script>
+</body>
+</html>
